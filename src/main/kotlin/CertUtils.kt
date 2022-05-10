@@ -41,4 +41,4 @@ fun validateCertificateChain(certificates: Array<X509Certificate>) {
     }
 }
 
-private const val ROOT_CERTIFICATE = "google_root_cert.pem"
+private const val ROOT_CERTIFICATE = "certs/google_root_cert.pem"
