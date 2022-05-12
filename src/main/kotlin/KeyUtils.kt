@@ -33,7 +33,7 @@ fun encrypt(key: Key, algorithm: String, message: ByteArray): ByteArray {
     val cipher = Cipher.getInstance(algorithm)
     cipher.init(Cipher.ENCRYPT_MODE, key)
     val encryptedMessage = cipher.doFinal(message)
-    println("Encrypted message: ${String(encryptedMessage)}")
+    println("Encrypted message: ${Base64.getEncoder().encodeToString(encryptedMessage)}")
 
     return encryptedMessage
 }

@@ -22,11 +22,8 @@ class HttpsServer(
 
     init {
         println()
-        println(InetAddress.getLocalHost().hostAddress)
+        println("IP address: " + InetAddress.getLocalHost().hostAddress)
         println()
-        //NetworkInterface.networkInterfaces().forEach {
-        //    displayInterfaceInformation(it)
-        //}
     }
 
     fun start() {
@@ -50,9 +47,6 @@ class HttpsServer(
                 socket.close()
                 continue
             }
-
-            println("Local certificates: ${socket.session.localCertificates.first().encoded}")
-            //println("Peer certificates: ${socket.session.peerCertificates}")
 
             var certificateChain: Array<X509Certificate>
             var input: ObjectInputStream? = null
@@ -80,9 +74,9 @@ class HttpsServer(
             }
 
             val key = generateKey("DESede", 168)
-            println("KEY: ${String(key.encoded)}")
+            println("KEY: ${Base64.getEncoder().encodeToString(key.encoded)}")
             val encryptedKey = encrypt(certificateChain.first().publicKey, "RSA", key.encoded)
-            println("Encrypted key: ${String(encryptedKey)}")
+            println("Encrypted key: ${Base64.getEncoder().encodeToString(encryptedKey)}")
 
             val out = ObjectOutputStream(socket.outputStream)
             out.writeObject(encryptedKey)
