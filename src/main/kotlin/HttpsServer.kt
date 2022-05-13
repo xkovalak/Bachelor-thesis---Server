@@ -1,3 +1,4 @@
+import entities.ServerResult
 import kotlinx.serialization.json.Json
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream

@@ -1,5 +1,6 @@
 import ASN1Parser.Companion.KEY_DESCRIPTION_OID
 import com.google.gson.JsonParser
+import entities.SecurityLevel
 import org.bouncycastle.asn1.ASN1InputStream
 import org.bouncycastle.asn1.ASN1OctetString
 import org.bouncycastle.asn1.ASN1Sequence
