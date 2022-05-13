@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.5.10"
     application
-    kotlin("plugin.serialization") version "1.6.10"
+    kotlin("plugin.serialization") version "1.5.10"
 }
 
 group = "me.jkova"
@@ -21,6 +21,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("com.google.code.gson:gson:2.8.5")
+    implementation("org.bouncycastle:bcpkix-jdk15on:1.61")
 }
 
 tasks.test {

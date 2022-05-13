@@ -1,13 +1,18 @@
+import kotlinx.serialization.json.Json
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.math.BigInteger
 import java.net.InetAddress
-import java.net.NetworkInterface
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 import java.util.*
-import javax.net.ssl.*
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLServerSocket
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.TrustManagerFactory
 
 
 class HttpsServer(
@@ -20,12 +25,6 @@ class HttpsServer(
     private lateinit var serverSocket: SSLServerSocket
     private var isServerOn: Boolean = false
 
-    init {
-        println()
-        println("IP address: " + InetAddress.getLocalHost().hostAddress)
-        println()
-    }
-
     fun start() {
         val context = createSSLContext()
 
@@ -33,6 +32,11 @@ class HttpsServer(
         serverSocket = serverSocketFactory.createServerSocket(port) as SSLServerSocket
 
         isServerOn = true
+
+        println("Server started. For stopping type \"stop\"")
+        println()
+        println("Server IP address: " + InetAddress.getLocalHost().hostAddress)
+        println()
 
         while (isServerOn) {
             println("Waiting for socket")
@@ -51,35 +55,47 @@ class HttpsServer(
             var certificateChain: Array<X509Certificate>
             var input: ObjectInputStream? = null
 
+            val attestationChallenge = BigInteger(256, Random()).toByteArray()
+            val out = ObjectOutputStream(socket.outputStream)
+
             try {
+
+                out.writeObject(attestationChallenge)
+
                 input = ObjectInputStream(socket.inputStream)
                 certificateChain = input.readObject() as Array<X509Certificate>
 
             } catch (e: Exception) {
-                println("Getting certificate chain failed")
+                println("Getting certificate chain failed!")
                 println(e)
+                val result = ServerResult(true, "Getting certificate chain failed!")
+                out.writeObject(Json.encodeToString(ServerResult.serializer(), result))
+                out.close()
                 socket.close()
                 input?.close()
                 continue
             }
 
             try {
-                validateCertificateChain(certificateChain)
+                validateCertificateChain(certificateChain, attestationChallenge)
             } catch (e: Exception) {
                 println("Certificate chain is not valid!")
                 println(e)
+                val result = ServerResult(true, e.message ?: "Certificate chain is not valid!")
+                out.writeObject(Json.encodeToString(ServerResult.serializer(), result))
+                out.close()
                 socket.close()
                 input.close()
                 continue
             }
 
             val key = generateKey("DESede", 168)
-            println("KEY: ${Base64.getEncoder().encodeToString(key.encoded)}")
+            println("KEY: ${key.encoded.toHexString()}")
             val encryptedKey = encrypt(certificateChain.first().publicKey, "RSA", key.encoded)
-            println("Encrypted key: ${Base64.getEncoder().encodeToString(encryptedKey)}")
+            println("Encrypted key: ${encryptedKey.toHexString()}")
 
-            val out = ObjectOutputStream(socket.outputStream)
-            out.writeObject(encryptedKey)
+            val result = ServerResult(false, "Success", encryptedKey)
+            out.writeObject(Json.encodeToString(ServerResult.serializer(), result))
 
             out.close()
             socket.close()
@@ -87,6 +103,8 @@ class HttpsServer(
     }
 
     private fun createSSLContext(): SSLContext {
+        println("Creating SSL context...")
+
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
         keyStore.load(null)
         keyStore.setKeyEntry(ALIAS, privateKey, password, arrayOf(certificate))
@@ -106,20 +124,6 @@ class HttpsServer(
 
     fun stop() {
         isServerOn = false
-    }
-
-    private fun displayInterfaceInformation(netInterface: NetworkInterface) {
-        if (!netInterface.inetAddresses.hasMoreElements()) {
-            return
-        }
-
-        println("Display name: ${netInterface.displayName}")
-        println("Name: ${netInterface.name}")
-        val inetAddresses = netInterface.inetAddresses
-        for (inetAddress in Collections.list(inetAddresses)) {
-            println("InetAddress: $inetAddress")
-        }
-        println()
     }
 
     companion object {
